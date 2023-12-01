@@ -24,11 +24,20 @@ jobs:
         cat code_scanning_results.json
     - name: Check if there are open alerts and exit accordingly
       run: |
-        echo “Check if there are open alerts and exit accordingly”
-        jq '.alerts[] | select(.state == "open")' code_scanning_results.json
-        if jq -e '.alerts | any(.state == "open")' code_scanning_results.json; then
-          echo "Found open alerts. Failing the workflow."
-          exit 1
+        if [ "$(jq 'type' code_scanning_results.json)" == "array" ]; then
+           # If it's an array, check if any element has state "open"
+          if jq -e '.[] | select(.state == "open")' code_scanning_results.json; then
+            echo "Found open alerts. Failing the workflow."
+            exit 1
+          else
+            echo "No open alerts found."
+          fi
         else
-          echo "No open alerts found."
+          # If it's not an array, check if the 'alerts' key has state "open"
+          if jq -e '.alerts | any(.state == "open")' code_scanning_results.json; then
+            echo "Found open alerts. Failing the workflow."
+            exit 1
+          else
+            echo "No open alerts found."
+          fi
         fi
